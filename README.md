@@ -1,4 +1,4 @@
-# Projeto Integrador V-A
+# Projeto Integrador - 2 B
 
 Aplicativo mobile desenvolvido com **Expo + React Native + TypeScript** para simular o fluxo de um restaurante com três áreas principais:
 
