@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useMenu } from '@/contexts/MenuContext';
 import { Mesa, MesaStatus, useMesas } from '@/contexts/MesaContext';
 import {
@@ -20,6 +21,7 @@ import {
   Trash2,
   Users,
   X,
+  CalendarPlus,
 } from 'lucide-react-native';
 import type { Order, OrderItem } from '@/types/menu';
 
@@ -84,6 +86,7 @@ function getPedidoDaMesa(mesa: Mesa, orders: Order[]) {
 }
 
 export default function StatusMesaScreen() {
+  const router = useRouter();
   const { mesas, adicionarMesa, removerMesa, atualizarMesaStatus } = useMesas();
   const { orders } = useMenu();
 
@@ -129,15 +132,6 @@ export default function StatusMesaScreen() {
     setStatusDraft(mesa.status);
     setModalDetalheVisible(true);
   };
-
-  useEffect(() => {
-    if (!mesaSelecionada) {
-      return;
-    }
-
-    setPessoasDraft(String(mesaSelecionada.pessoas ?? 1));
-    setStatusDraft(mesaSelecionada.status);
-  }, [mesaSelecionada]);
 
   const handleSalvarDetalhes = () => {
     if (!mesaSelecionada) {
@@ -194,8 +188,18 @@ export default function StatusMesaScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.kicker}>Painel operacional</Text>
-        <Text style={styles.headerTitle}>Mesas</Text>
+        <View style={styles.headerTopRow}>
+          <View style={styles.headerTitles}>
+            <Text style={styles.kicker}>Painel operacional</Text>
+            <Text style={styles.headerTitle}>Mesas</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.agendarButton}
+            onPress={() => router.push('/mesas/agendar')}>
+            <CalendarPlus size={20} color="#FFF" />
+            <Text style={styles.agendarButtonText}>Agendar</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.headerSubtitle}>
           Toque em uma mesa para ver o pedido, a quantidade de pessoas e o status atual.
         </Text>
@@ -523,6 +527,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 22,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTitles: {
+    flex: 1,
+  },
   kicker: {
     color: '#FFE7DB',
     fontSize: 12,
@@ -536,8 +548,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFF',
   },
+  agendarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+  },
+  agendarButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   headerSubtitle: {
-    marginTop: 8,
+    marginTop: 12,
     fontSize: 14,
     lineHeight: 20,
     color: 'rgba(255,255,255,0.9)',

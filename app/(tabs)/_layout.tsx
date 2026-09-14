@@ -41,13 +41,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="order"
         options={{
+          title: "Pedidos",
           tabBarIcon: ({ color, size }) => (
             <ClipboardList color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
-        name="Mesas"
+        name="mesas"
         options={{
           title: "Status Mesa",
           tabBarIcon: ({ color, size }) => (

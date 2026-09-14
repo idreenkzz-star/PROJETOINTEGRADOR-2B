@@ -5,8 +5,10 @@ Aplicativo mobile desenvolvido com **Expo + React Native + TypeScript** para sim
 - **Cardápio do cliente**
 - **Gestão do restaurante**
 - **Controle de pedidos e mesas**
+- **Agendamento de mesas**
+- **Histórico de pedidos**
 
-O projeto foi pensado para organizar o atendimento de forma simples e visual, permitindo cadastrar pratos, montar pedidos, acompanhar o status de preparo e monitorar as mesas do salão.
+O projeto foi pensado para organizar o atendimento de forma simples e visual, permitindo cadastrar pratos, montar pedidos, acompanhar o status de preparo, monitorar as mesas do salão, reservar mesas com antecedência e consultar o histórico de pedidos realizados.
 
 ## Visão Geral
 
@@ -45,6 +47,13 @@ O sistema mantém os dados de cardápio e pedidos em armazenamento local, enquan
   - `ready`
   - `delivered`
 
+### Histórico de Pedidos
+
+- Consulta dos pedidos realizados de forma read-only
+- Filtro por status (todos, pendente, preparando, pronto, entregue)
+- Exibição de cliente, data/hora, itens e total
+- Modal com detalhes completos do pedido
+
 ### Mesas
 
 - Painel visual com 12 mesas padrão
@@ -57,6 +66,14 @@ O sistema mantém os dados de cardápio e pedidos em armazenamento local, enquan
   - `atendido`
 - Associação da mesa ao cliente e ao pedido
 - Visualização do pedido atual e da quantidade de pessoas
+
+### Agendamento de Mesa
+
+- Seletor de mesa disponível para a reserva
+- Informações do cliente, data, horário e quantidade de pessoas
+- Validação de data (`AAAA-MM-DD`) e horário (`HH:MM`)
+- Lista das próximas reservas ordenadas por data e hora
+- Cancelamento de reserva com confirmação
 
 ## Tecnologias
 
@@ -76,13 +93,17 @@ app/
   (tabs)/
     client/
     order/
+      historico.tsx
     restaurant/
-    status-mesa.tsx
+    mesas/
+      agendar.tsx
 contexts/
   MenuContext.tsx
   MesaContext.tsx
+  ReservaContext.tsx
 hooks/
 types/
+  reservas.ts
 assets/
 __tests__/
 ```
@@ -93,13 +114,16 @@ __tests__/
 - [`app/index.tsx`](./app/index.tsx): redirecionamento inicial para o fluxo principal
 - [`contexts/MenuContext.tsx`](./contexts/MenuContext.tsx): estado global de cardápio e pedidos
 - [`contexts/MesaContext.tsx`](./contexts/MesaContext.tsx): estado global das mesas
+- [`contexts/ReservaContext.tsx`](./contexts/ReservaContext.tsx): estado global das reservas de mesa
 - [`app/(tabs)/client/index.tsx`](./app/%28tabs%29/client/index.tsx): tela do cardápio do cliente
 - [`app/(tabs)/client/cart.tsx`](./app/%28tabs%29/client/cart.tsx): carrinho e envio de pedido
 - [`app/(tabs)/restaurant/index.tsx`](./app/%28tabs%29/restaurant/index.tsx): gestão do cardápio
 - [`app/(tabs)/restaurant/add-item.tsx`](./app/%28tabs%29/restaurant/add-item.tsx): cadastro de pratos
 - [`app/(tabs)/restaurant/editar-item.tsx`](./app/%28tabs%29/restaurant/editar-item.tsx): edição de pratos
 - [`app/(tabs)/order/index.tsx`](./app/%28tabs%29/order/index.tsx): acompanhamento dos pedidos
-- [`app/(tabs)/status-mesa.tsx`](./app/%28tabs%29/status-mesa.tsx): painel de mesas
+- [`app/(tabs)/order/historico.tsx`](./app/%28tabs%29/order/historico.tsx): histórico de pedidos realizados
+- [`app/(tabs)/mesas/index.tsx`](./app/%28tabs%29/mesas/index.tsx): painel de mesas
+- [`app/(tabs)/mesas/agendar.tsx`](./app/%28tabs%29/mesas/agendar.tsx): agendamento de mesas
 
 ## Como Executar
 
@@ -140,10 +164,10 @@ npm run build:web
 
 O projeto usa:
 
-- `AsyncStorage` para salvar `menuItems` e `orders`
+- `AsyncStorage` para salvar `menuItems`, `orders` e `reservas`
 - estado em memória para o gerenciamento das mesas
 
-Isso permite que o cardápio e os pedidos permaneçam salvos entre reinicializações do app, enquanto o painel de mesas funciona de forma integrada durante a execução.
+Isso permite que o cardápio, os pedidos e as reservas permaneçam salvos entre reinicializações do app, enquanto o painel de mesas funciona de forma integrada durante a execução.
 
 ## Testes
 
@@ -153,6 +177,8 @@ O repositório inclui testes para funções auxiliares de:
 - criação de pedidos
 - criação das mesas padrão
 - atualização de status das mesas
+- criação de reservas de mesa
+- validação de data e horário de reserva
 
 Execute com:
 
