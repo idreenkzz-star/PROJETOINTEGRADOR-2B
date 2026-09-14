@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,53 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Clock, ChefHat, CheckCircle, Package, History } from 'lucide-react-native';
+import { ArrowLeft, Clock, ChefHat, CheckCircle, Package, History, Inbox } from 'lucide-react-native';
 import { useMenu } from '@/contexts/MenuContext';
 import { Order } from '@/types/menu';
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<
+  Order['status'],
+  { label: string; color: string; icon: typeof Clock }
+> = {
   pending: { label: 'Pendente', color: '#F39C12', icon: Clock },
   preparing: { label: 'Preparando', color: '#3498DB', icon: ChefHat },
   ready: { label: 'Pronto', color: '#27AE60', icon: CheckCircle },
   delivered: { label: 'Entregue', color: '#95A5A6', icon: Package },
 };
 
-export default function OrdersScreen() {
+const FILTERS: { key: 'todos' | Order['status']; label: string }[] = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'pending', label: 'Pendente' },
+  { key: 'preparing', label: 'Preparando' },
+  { key: 'ready', label: 'Pronto' },
+  { key: 'delivered', label: 'Entregue' },
+];
+
+export default function HistoricoScreen() {
   const router = useRouter();
-  const { orders, updateOrderStatus } = useMenu();
+  const { orders } = useMenu();
+  const [filter, setFilter] = useState<'todos' | Order['status']>('todos');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleTimeString('pt-BR', {
+  const filteredOrders = useMemo(() => {
+    if (filter === 'todos') {
+      return orders;
+    }
+    return orders.filter((order) => order.status === filter);
+  }, [orders, filter]);
+
+  const formatDateTime = (date: Date) => {
+    const parsed = new Date(date);
+    const data = parsed.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+    const hora = parsed.toLocaleTimeString('pt-BR', {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const handleStatusChange = (orderId: string, currentStatus: Order['status']) => {
-    const statusFlow: Order['status'][] = ['pending', 'preparing', 'ready', 'delivered'];
-    const currentIndex = statusFlow.indexOf(currentStatus);
-    if (currentIndex < statusFlow.length - 1) {
-      updateOrderStatus(orderId, statusFlow[currentIndex + 1]);
-    }
+    return `${data} às ${hora}`;
   };
 
   return (
@@ -47,18 +65,53 @@ export default function OrdersScreen() {
           onPress={() => router.back()}>
           <ArrowLeft size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.title}>Pedidos</Text>
-        <TouchableOpacity
-          style={styles.historyButton}
-          onPress={() => router.push('/order/historico')}>
-          <History size={24} color="#FFF" />
-        </TouchableOpacity>
+        <Text style={styles.title}>Histórico de Pedidos</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <View style={styles.filterRow}>
+        {FILTERS.map((item) => {
+          const isActive = filter === item.key;
+          const color =
+            item.key === 'todos' ? '#FF6B35' : STATUS_CONFIG[item.key as Order['status']].color;
+
+          return (
+            <TouchableOpacity
+              key={item.key}
+              style={[
+                styles.filterChip,
+                {
+                  borderColor: color,
+                  backgroundColor: isActive ? color : '#FFF',
+                },
+              ]}
+              onPress={() => setFilter(item.key)}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  { color: isActive ? '#FFF' : color },
+                ]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <FlatList
-        data={orders}
+        data={filteredOrders}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Inbox size={44} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>Nenhum pedido no histórico</Text>
+            <Text style={styles.emptySubtitle}>
+              Os pedidos realizados aparecerão aqui para consulta.
+            </Text>
+          </View>
+        }
         renderItem={({ item }) => {
           const statusConfig = STATUS_CONFIG[item.status];
           const StatusIcon = statusConfig.icon;
@@ -70,7 +123,9 @@ export default function OrdersScreen() {
               <View style={styles.orderHeader}>
                 <View>
                   <Text style={styles.orderCustomer}>{item.customerName}</Text>
-                  <Text style={styles.orderTime}>{formatDate(item.createdAt)}</Text>
+                  <Text style={styles.orderTime}>
+                    {formatDateTime(item.createdAt)}
+                  </Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: statusConfig.color }]}>
                   <StatusIcon size={16} color="#FFF" />
@@ -90,17 +145,7 @@ export default function OrdersScreen() {
                 <Text style={styles.orderTotal}>
                   Total: R$ {item.total.toFixed(2)}
                 </Text>
-                {item.status !== 'delivered' && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: statusConfig.color }]}
-                    onPress={() => handleStatusChange(item.id, item.status)}>
-                    <Text style={styles.actionButtonText}>
-                      {item.status === 'pending' && 'Iniciar Preparo'}
-                      {item.status === 'preparing' && 'Marcar Pronto'}
-                      {item.status === 'ready' && 'Marcar Entregue'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                <History size={18} color="#B0B0B0" />
               </View>
             </TouchableOpacity>
           );
@@ -122,14 +167,16 @@ export default function OrdersScreen() {
                 <Text style={styles.modalTitle}>Detalhes do Pedido</Text>
 
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Mesa:</Text>
-                  <Text style={styles.modalValue}>{selectedOrder.customerName}</Text>
+                  <Text style={styles.modalLabel}>Cliente:</Text>
+                  <Text style={styles.modalValue}>
+                    {selectedOrder.customerName}
+                  </Text>
                 </View>
 
                 <View style={styles.modalSection}>
-                  <Text style={styles.modalLabel}>Horário:</Text>
+                  <Text style={styles.modalLabel}>Data e Horário:</Text>
                   <Text style={styles.modalValue}>
-                    {formatDate(selectedOrder.createdAt)}
+                    {formatDateTime(selectedOrder.createdAt)}
                   </Text>
                 </View>
 
@@ -167,24 +214,6 @@ export default function OrdersScreen() {
                     R$ {selectedOrder.total.toFixed(2)}
                   </Text>
                 </View>
-
-                {selectedOrder.status !== 'delivered' && (
-                  <TouchableOpacity
-                    style={[
-                      styles.modalButton,
-                      { backgroundColor: STATUS_CONFIG[selectedOrder.status].color }
-                    ]}
-                    onPress={() => {
-                      handleStatusChange(selectedOrder.id, selectedOrder.status);
-                      setSelectedOrder(null);
-                    }}>
-                    <Text style={styles.modalButtonText}>
-                      {selectedOrder.status === 'pending' && 'Iniciar Preparo'}
-                      {selectedOrder.status === 'preparing' && 'Marcar Pronto'}
-                      {selectedOrder.status === 'ready' && 'Marcar Entregue'}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </>
             )}
           </View>
@@ -219,9 +248,22 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 40,
   },
-  historyButton: {
-    width: 40,
-    alignItems: 'flex-end',
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  filterChip: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   list: {
     padding: 16,
@@ -287,15 +329,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
   },
-  actionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 80,
   },
-  actionButtonText: {
-    color: '#FFF',
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  emptySubtitle: {
+    marginTop: 6,
     fontSize: 14,
-    fontWeight: '600',
+    color: '#6B7280',
+    textAlign: 'center',
+    maxWidth: 260,
   },
   modalOverlay: {
     flex: 1,
@@ -364,16 +414,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#FF6B35',
-  },
-  modalButton: {
-    marginTop: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });
